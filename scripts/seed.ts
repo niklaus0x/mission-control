@@ -18,6 +18,11 @@ const agents: Agent[] = [
   { id: 'agent_piper', name: 'Piper', role: 'Business Development', status: 'offline', stats: { totalCompleted: 38, averageCompletionTime: 67, inProgress: 0, failureRate: 8 } },
   { id: 'agent_doc', name: 'Doc', role: 'Technical Writer', status: 'busy', stats: { totalCompleted: 92, averageCompletionTime: 41, inProgress: 1, failureRate: 2 } },
   { id: 'agent_sarah', name: 'Sarah', role: 'Executive Assistant', status: 'idle', stats: { totalCompleted: 156, averageCompletionTime: 15, inProgress: 0, failureRate: 1 } },
+  // New agents added
+  { id: 'agent_senior_developer', name: 'Senior developer', role: 'Full-Stack Senior Engineer', status: 'idle', stats: { totalCompleted: 0, averageCompletionTime: 0, inProgress: 0, failureRate: 0 } },
+  { id: 'agent_tobi_alt', name: 'Tobi', role: 'Full-Stack Senior Engineer', status: 'idle', stats: { totalCompleted: 0, averageCompletionTime: 0, inProgress: 0, failureRate: 0 } },
+  { id: 'agent_tola', name: 'Tola', role: 'Social Media Strategist', status: 'idle', stats: { totalCompleted: 0, averageCompletionTime: 0, inProgress: 0, failureRate: 0 } },
+  { id: 'agent_tomi', name: 'Tomi', role: 'Lead Generation Specialist', status: 'idle', stats: { totalCompleted: 0, averageCompletionTime: 0, inProgress: 0, failureRate: 0 } },
 ];
 
 const now = new Date().toISOString();
@@ -30,7 +35,7 @@ const tasks: Task[] = [
   { id: 'task_2', title: 'Design system documentation', description: 'Create comprehensive docs for the design system including colors, typography, and components.', assignedAgentId: 'agent_doc', priority: 'medium', status: 'in_progress', createdAt: d1, updatedAt: h2, handoffs: [], statusHistory: [{ id: 's3', status: 'queued', timestamp: d1 }, { id: 's4', status: 'in_progress', timestamp: h2 }] },
   { id: 'task_3', title: 'Competitor analysis report', description: 'Analyze top 5 competitors: pricing strategies, feature sets, and market positioning.', assignedAgentId: 'agent_scout', priority: 'high', status: 'in_progress', createdAt: d1, updatedAt: h1, handoffs: [], statusHistory: [{ id: 's5', status: 'queued', timestamp: d1 }, { id: 's6', status: 'in_progress', timestamp: h1 }] },
   { id: 'task_4', title: 'SEO optimization for blog', description: 'Optimize existing blog posts for target keywords and implement structured data markup.', assignedAgentId: 'agent_lincoln', priority: 'medium', status: 'queued', createdAt: h1, updatedAt: h1, handoffs: [], statusHistory: [{ id: 's7', status: 'queued', timestamp: h1 }] },
-  { id: 'task_5', title: 'Product launch content calendar', description: 'Create a 3-month content calendar for product launch including social, blog, and email.', assignedAgentId: 'agent_paige', priority: 'high', status: 'done', createdAt: new Date(Date.now() - 259200000).toISOString(), updatedAt: d1, completedAt: d1, handoffs: [], statusHistory: [{ id: 's8', status: 'queued', timestamp: new Date(Date.now() - 259200000).toISOString() }, { id: 's9', status: 'in_progress', timestamp: new Date(Date.now() - 172800000).toISOString() }, { id: 's10', status: 'done', timestamp: d1 }] },
+  { id: 'task_5', title: 'Product launch content calendar', description: 'Create a 3-month content calendar for product launch including social, blog, and email.', assignedAgentId: 'agent_paige', priority: 'high', status: 'done', createdAt: new Date(Date.now() - 259200000).toISOString(), updatedAt: d1, completedAt: d1, handoffs: [], statusHistory: [{ id: 's8', status: 'queued', timestamp: new Date(Date.now() - 259200000).toISOString() }, { id: 's:', status: 'in_progress', timestamp: new Date(Date.now() - 172800000).toISOString() }, { id: 's10', status: 'done', timestamp: d1 }] },
   { id: 'task_6', title: 'Brand guidelines update', description: 'Revise brand guidelines to include new visual identity elements and tone of voice.', assignedAgentId: 'agent_mark', priority: 'low', status: 'queued', createdAt: h2, updatedAt: h2, handoffs: [], statusHistory: [{ id: 's11', status: 'queued', timestamp: h2 }] },
   { id: 'task_7', title: 'API integration testing', description: 'Write comprehensive integration tests for the new third-party API connections.', assignedAgentId: 'agent_tobi', priority: 'high', status: 'queued', createdAt: now, updatedAt: now, handoffs: [], statusHistory: [{ id: 's12', status: 'queued', timestamp: now }] },
   { id: 'task_8', title: 'Meeting notes from Q4 planning', description: 'Compile and distribute meeting notes from Q4 strategic planning to all stakeholders.', assignedAgentId: 'agent_sarah', priority: 'medium', status: 'done', createdAt: new Date(Date.now() - 172800000).toISOString(), updatedAt: d1, completedAt: d1, handoffs: [], statusHistory: [{ id: 's13', status: 'queued', timestamp: new Date(Date.now() - 172800000).toISOString() }, { id: 's14', status: 'in_progress', timestamp: new Date(Date.now() - 129600000).toISOString() }, { id: 's15', status: 'done', timestamp: d1 }] },
@@ -40,4 +45,4 @@ const tasks: Task[] = [
 
 fs.writeFileSync(AGENTS_FILE, JSON.stringify(agents, null, 2));
 fs.writeFileSync(TASKS_FILE, JSON.stringify(tasks, null, 2));
-console.log(`✅ Seeded: ${agents.length} agents, ${tasks.length} tasks`);
+console.log(`✓‌Seeded: ${agents.length} agents, ${tasks.length} tasks`);
