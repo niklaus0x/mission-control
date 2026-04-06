@@ -5,18 +5,21 @@ import { useStore } from '@/lib/store';
 import AgentCard from '@/components/AgentCard';
 import StatsCard from '@/components/StatsCard';
 import CreateTaskModal from '@/components/CreateTaskModal';
+import AddAgentModal from '@/components/AddAgentModal';
 import { CreateTaskInput, Task } from '@/lib/types';
 import { formatRelativeTime } from '@/lib/utils';
 
 export default function Home() {
   const { agents, stats, lastUpdated, setAgents, setStats, setTasks, tasks } = useStore();
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [isAddAgentModalOpen, setIsAddAgentModalOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
   const fetchData = async () => {
     try {
       const [agentsRes, statsRes, tasksRes] = await Promise.all([fetch('/api/agents'), fetch('/api/stats'), fetch('/api/tasks')]);
-      setAgents(await agentsRes.json());
+      const agentsData = await agentsRes.json();
+      setAgents(agentsData.agents || agentsData);
       setStats(await statsRes.json());
       setTasks(await tasksRes.json());
     } catch (error) {
@@ -34,6 +37,27 @@ export default function Home() {
       if (!response.ok) throw new Error('Failed to create task');
       fetchData();
     } catch (error) { alert('Failed to create task. Please try again.'); }
+  };
+
+  const handleAddAgent = async (input: any) => {
+    try {
+      const response = await fetch('/api/agents', { 
+        method: 'POST', 
+        headers: { 'Content-Type': 'application/json' }, 
+        body: JSON.stringify(input) 
+      });
+      
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to add agent');
+      }
+      
+      // Immediately update the UI with the new agent
+      const result = await response.json();
+      setAgents([...agents, result.agent]);
+    } catch (error: any) {
+      throw error;
+    }
   };
 
   if (isLoading) return (<div className="flex items-center justify-center min-h-screen"><div className="text-center"><div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div><p className="mt-4 text-zinc-400 mono">Loading mission control...</p></div></div>);
@@ -61,7 +85,10 @@ export default function Home() {
                 </div>
               )}
             </div>
-            <button onClick={() => setIsCreateModalOpen(true)} className="px-5 py-2.5 bg-amber-500 hover:bg-amber-600 text-zinc-950 rounded-lg font-bold mono transition-all duration-200 shadow-lg shadow-amber-500/20">+ NEW BRIEFING</button>
+            <div className="flex gap-3">
+              <button onClick={() => setIsAddAgentModalOpen(true)} className="px-5 py-2.5 bg-blue-500 hover:bg-blue-600 text-white rounded-lg font-bold mono transition-all duration-200 shadow-lg shadow-blue-500/20">+ NEW AGENT</button>
+              <button onClick={() => setIsCreateModalOpen(true)} className="px-5 py-2.5 bg-amber-500 hover:bg-amber-600 text-zinc-950 rounded-lg font-bold mono transition-all duration-200 shadow-lg shadow-amber-500/20">+ NEW BRIEFING</button>
+            </div>
           </div>
         </div>
       </div>
@@ -95,6 +122,7 @@ export default function Home() {
         </div>
       </div>
       <CreateTaskModal agents={agents} isOpen={isCreateModalOpen} onClose={() => setIsCreateModalOpen(false)} onSubmit={handleCreateTask} />
+      <AddAgentModal isOpen={isAddAgentModalOpen} onClose={() => setIsAddAgentModalOpen(false)} onSubmit={handleAddAgent} />
     </div>
   );
 }
