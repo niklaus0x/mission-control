@@ -1,61 +1,45 @@
-## Deployment
+# Railway Deployment Guide
 
-This project uses an automated CI/CD pipeline that deploys to Vercel via GitHub Actions.
+This project is deployed on [Railway](https://railway.app), a modern hosting platform with automatic deployments from GitHub.
 
-### Initial Setup
+## Initial Setup
 
-#### 1. Connect Repository to Vercel
+### 1. Create a Railway Account
+1. Go to [railway.app](https://railway.app)
+2. Click **Login with GitHub**
+3. Authorize Railway to access your GitHub account
 
-1. Go to [Vercel Dashboard](https://vercel.com/dashboard)
-2. Click **"Add New..."** → **"Project"**
-3. Import the `niklaus0x/mission-control` repository
-4. Vercel will auto-detect Next.js settings
-5. Click **"Deploy"** (this first deployment creates the project)
+### 2. Create a New Railway Project
+1. From the Railway dashboard, click **New Project**
+2. Select **Deploy from GitHub repo**
+3. Choose `niklaus0x/mission-control`
+4. Railway auto-detects Next.js and deploys automatically
 
-#### 2. Configure GitHub Secrets
+### 3. Get Your Railway Token
+1. Go to [Railway Account Settings](https://railway.app/account)
+2. Navigate to the **Tokens** tab
+3. Click **Create Token**, name it (e.g. `github-actions`)
+4. Copy the token immediately
 
-After your first Vercel deployment, add these three secrets to your GitHub repository:
+### 4. Add Token to GitHub Secrets
+1. Go to `https://github.com/niklaus0x/mission-control/settings/secrets/actions`
+2. Click **New repository secret**
+3. Name: `RAILWAY_TOKEN`, Value: paste your token
 
-**To find your Vercel credentials:**
+## How CI/CD Works
 
-1. **VERCEL_TOKEN**
-   - Go to [Vercel Account Tokens](https://vercel.com/account/tokens)
-   - Click **"Create Token"**
-   - Name it (e.g., "GitHub Actions")
-   - Copy the token immediately (shown only once)
+- **Push to `main`** → automatic production deployment to Railway
+- **Pull request** → PR comment with deployment info
 
-2. **VERCEL_ORG_ID**
-   - Go to [Vercel Account Settings](https://vercel.com/account)
-   - Scroll to **"Your ID"** section
-   - Copy the alphanumeric ID
-
-3. **VERCEL_PROJECT_ID**
-   - Open your project in Vercel Dashboard
-   - Go to **Settings** → **General**
-   - Scroll to **"Project ID"** section
-   - Copy the project ID
-
-**To add secrets to GitHub:**
-
-1. Go to your repository: `https://github.com/niklaus0x/mission-control`
-2. Click **Settings** → **Secrets and variables** → **Actions**
-3. Click **"New repository secret"** for each of the three secrets
-4. Name them exactly: `VERCEL_TOKEN`, `VERCEL_ORG_ID`, `VERCEL_PROJECT_ID`
-
-### How the Pipeline Works
-
-#### Production Deployments
-- **Trigger:** Push to `main` branch
-- **Action:** Automatic deployment to Vercel production
-
-#### Preview Deployments
-- **Trigger:** Pull request opened/updated targeting `main`
-- **Action:** Automatic preview deployment with URL posted as PR comment
-
-### Manual Deployment (Optional)
+## Manual Deployment
 
 ```bash
-npm i -g vercel
-vercel link
-vercel --prod
+npm install -g @railway/cli
+railway login
+railway link
+railway up
 ```
+
+## Configuration
+
+See `railway.json` at the repo root — uses Nixpacks builder, `npm run build` / `npm start`, health check on `/`.
