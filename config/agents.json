@@ -1,0 +1,158 @@
+[
+  {
+    "id": "agent_tobi",
+    "name": "Tobi",
+    "role": "Senior Software Engineer",
+    "status": "busy",
+    "stats": {
+      "totalCompleted": 47,
+      "averageCompletionTime": 32,
+      "inProgress": 2,
+      "failureRate": 4
+    }
+  },
+  {
+    "id": "agent_paige",
+    "name": "Paige",
+    "role": "Content Strategist",
+    "status": "idle",
+    "stats": {
+      "totalCompleted": 89,
+      "averageCompletionTime": 18,
+      "inProgress": 0,
+      "failureRate": 2
+    }
+  },
+  {
+    "id": "agent_scout",
+    "name": "Scout",
+    "role": "Competitive Researcher",
+    "status": "busy",
+    "stats": {
+      "totalCompleted": 62,
+      "averageCompletionTime": 45,
+      "inProgress": 1,
+      "failureRate": 5
+    }
+  },
+  {
+    "id": "agent_iris",
+    "name": "Iris",
+    "role": "Image Creation",
+    "status": "idle",
+    "stats": {
+      "totalCompleted": 134,
+      "averageCompletionTime": 12,
+      "inProgress": 0,
+      "failureRate": 1
+    }
+  },
+  {
+    "id": "agent_lincoln",
+    "name": "Lincoln",
+    "role": "SEO Strategist",
+    "status": "busy",
+    "stats": {
+      "totalCompleted": 71,
+      "averageCompletionTime": 28,
+      "inProgress": 3,
+      "failureRate": 3
+    }
+  },
+  {
+    "id": "agent_mark",
+    "name": "Mark",
+    "role": "Brand Strategist",
+    "status": "idle",
+    "stats": {
+      "totalCompleted": 43,
+      "averageCompletionTime": 52,
+      "inProgress": 0,
+      "failureRate": 6
+    }
+  },
+  {
+    "id": "agent_piper",
+    "name": "Piper",
+    "role": "Business Development",
+    "status": "offline",
+    "stats": {
+      "totalCompleted": 38,
+      "averageCompletionTime": 67,
+      "inProgress": 0,
+      "failureRate": 8
+    }
+  },
+  {
+    "id": "agent_doc",
+    "name": "Doc",
+    "role": "Technical Writer",
+    "status": "busy",
+    "stats": {
+      "totalCompleted": 92,
+      "averageCompletionTime": 41,
+      "inProgress": 1,
+      "failureRate": 2
+    }
+  },
+  {
+    "id": "agent_sarah",
+    "name": "Sarah",
+    "role": "Executive Assistant",
+    "status": "idle",
+    "stats": {
+      "totalCompleted": 156,
+      "averageCompletionTime": 15,
+      "inProgress": 0,
+      "failureRate": 1
+    }
+  },
+  {
+    "id": "agent_senior_developer",
+    "name": "Senior developer",
+    "role": "Full-Stack Senior Engineer",
+    "status": "idle",
+    "stats": {
+      "totalCompleted": 0,
+      "averageCompletionTime": 0,
+      "inProgress": 0,
+      "failureRate": 0
+    }
+  },
+  {
+    "id": "agent_tobi_alt",
+    "name": "Tobi",
+    "role": "Full-Stack Senior Engineer",
+    "status": "idle",
+    "stats": {
+      "totalCompleted": 0,
+      "averageCompletionTime": 0,
+      "inProgress": 0,
+      "failureRate": 0
+    }
+  },
+  {
+    "id": "agent_tola",
+    "name": "Tola",
+    "role": "Social Media Strategist",
+    "status": "idle",
+    "stats": {
+      "totalCompleted": 0,
+      "averageCompletionTime": 0,
+      "inProgress": 0,
+      "failureRate": 0
+    }
+  },
+  {
+    "id": "agent_tomi",
+    "name": "Tomi",
+    "role": "Lead Generation Specialist",
+    "status": "idle",
+    "stats": {
+      "totalCompleted": 0,
+      "averageCompletionTime": 0,
+      "inProgress": 0,
+      "failureRate": 0
+    }
+  }
+]

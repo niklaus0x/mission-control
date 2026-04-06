@@ -1,0 +1,91 @@
+name: Sync Agent Registry
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'config/agents.json'
+  schedule:
+    # Run daily at 3 AM UTC
+    - cron: '0 3 * * *'
+  workflow_dispatch:
+
+jobs:
+  sync-agents:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+      
+      - name: Verify agents.json exists
+        run: |
+          if [ ! -f config/agents.json ]; then
+            echo "Error: config/agents.json not found"
+            exit 1
+          fi
+          echo "✓ config/agents.json exists"
+      
+      - name: Validate JSON
+        run: |
+          if ! jq empty config/agents.json 2>/dev/null; then
+            echo "Error: config/agents.json is not valid JSON"
+            exit 1
+          fi
+          echo "✓ config/agents.json is valid JSON"
+      
+      - name: Read and compare agents
+        id: check_changes
+        run: |
+          mkdir -p data
+          
+          # Check if data/agents.json exists
+          if [ ! -f data/agents.json ]; then
+            echo "changes=true" >> $GITHUB_OUTPUT
+            echo "No existing data/agents.json - will create"
+            exit 0
+          fi
+          
+          # Compare the files
+          if diff -q config/agents.json data/agents.json > /dev/null; then
+            echo "changes=false" >> $GITHUB_OUTPUT
+            echo "No changes detected"
+          else
+            echo "changes=true" >> $GITHUB_OUTPUT
+            echo "Changes detected in agent registry"
+          fi
+      
+      - name: Sync agents to data directory
+        if: steps.check_changes.outputs.changes == 'true'
+        run: |
+          cp config/agents.json data/agents.json
+          echo "✓ Synced config/agents.json to data/agents.json"
+      
+      - name: Commit and push changes
+        if: steps.check_changes.outputs.changes == 'true'
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          git add data/agents.json
+          git commit -m "chore: sync agent registry from config/agents.json [skip ci]"
+          git push
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      
+      - name: Summary
+        run: |
+          if [ "${{ steps.check_changes.outputs.changes }}" == "true" ]; then
+            AGENT_COUNT=$(jq 'length' config/agents.json)
+            echo "✅ Agent registry synced successfully"
+            echo "📊 Total agents: $AGENT_COUNT"
+          else
+            echo "✅ No changes needed - registry is up to date"
+          fi
