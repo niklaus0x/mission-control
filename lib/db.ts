@@ -2,7 +2,6 @@
  * db.ts — Supabase-powered data layer.
  *
  * All agents and tasks are persisted in Supabase Postgres.
- * Falls back gracefully if env vars are missing (dev mode).
  */
 import { createClient } from '@supabase/supabase-js';
 import { Agent, Task, CreateTaskInput, UpdateTaskInput, HandoffTaskInput } from './types';
@@ -14,7 +13,7 @@ export const supabase = createClient(supabaseUrl, supabaseKey);
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 function generateId(prefix: string): string {
-  return `${prefix}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+  return `${prefix}_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
 }
 
 // ─── Agent operations ───────────────────────────────────────────────────────
@@ -39,7 +38,7 @@ export async function updateAgent(id: string, updates: Partial<Agent>): Promise<
 export async function addAgent(agent: Omit<Agent, 'stats'> & { stats?: Agent['stats'] }): Promise<Agent> {
   const newAgent: Agent = {
     ...agent,
-    stats: agent.stats || { totalCompleted: 0, averageCompletionTime: 0, inProgress: 0, failureRate: 0 },
+    stats: agent.stats ?? { totalCompleted: 0, averageCompletionTime: 0, inProgress: 0, failureRate: 0 },
   };
   const { data, error } = await supabase.from('agents').insert(newAgent).select().single();
   if (error) throw new Error(error.message);
@@ -90,9 +89,7 @@ export async function updateTask(id: string, updates: UpdateTaskInput): Promise<
   const existing = await getTaskById(id);
   if (!existing) return null;
   const now = new Date().toISOString();
-  const row: Record<string, unknown> = {
-    updated_at: now,
-  };
+  const row: Record<string, unknown> = { updated_at: now };
   if (updates.title) row.title = updates.title;
   if (updates.description) row.description = updates.description;
   if (updates.priority) row.priority = updates.priority;

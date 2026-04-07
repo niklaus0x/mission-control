@@ -8,6 +8,7 @@ export interface Agent {
   role: string;
   status: AgentStatus;
   avatar?: string;
+  skills?: string[];
   stats: {
     totalCompleted: number;
     averageCompletionTime: number;
