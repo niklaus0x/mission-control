@@ -1,9 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAgentById, updateAgent } from '@/lib/db';
 
-export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
+type Params = Promise<{ id: string }>;
+
+export async function GET(request: NextRequest, { params }: { params: Params }) {
   try {
-    const agent = getAgentById(params.id);
+    const { id } = await params;
+    const agent = await getAgentById(id);
     if (!agent) return NextResponse.json({ error: 'Agent not found' }, { status: 404 });
     return NextResponse.json(agent);
   } catch (error) {
@@ -11,10 +14,11 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
   }
 }
 
-export async function PATCH(request: NextRequest, { params }: { params: { id: string } }) {
+export async function PATCH(request: NextRequest, { params }: { params: Params }) {
   try {
+    const { id } = await params;
     const updates = await request.json();
-    const agent = updateAgent(params.id, updates);
+    const agent = await updateAgent(id, updates);
     if (!agent) return NextResponse.json({ error: 'Agent not found' }, { status: 404 });
     return NextResponse.json(agent);
   } catch (error) {
