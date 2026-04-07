@@ -1,27 +1,16 @@
 /**
- * db.ts — In-memory data store for Vercel/serverless compatibility.
+ * db.ts — Supabase-powered data layer.
  *
- * Vercel's filesystem is read-only at runtime, so we cannot use fs.writeFileSync.
- * Instead, we keep agents and tasks in module-level memory, seeded from the
- * bundled config/agents.json at startup.
- *
- * NOTE: Data resets on each cold start. For persistence, swap the in-memory
- * arrays for a database (e.g. Supabase, PlanetScale, MongoDB Atlas).
+ * All agents and tasks are persisted in Supabase Postgres.
+ * Falls back gracefully if env vars are missing (dev mode).
  */
+import { createClient } from '@supabase/supabase-js';
 import { Agent, Task, CreateTaskInput, UpdateTaskInput, HandoffTaskInput } from './types';
 
-// ─── Seed agents from bundled JSON ──────────────────────────────────────────
-let seedAgents: Agent[] = [];
-try {
-  // eslint-disable-next-line @typescript-eslint/no-var-requires
-  seedAgents = require('../config/agents.json') as Agent[];
-} catch {
-  seedAgents = [];
-}
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 
-// ─── In-memory stores ───────────────────────────────────────────────────────
-let agents: Agent[] = [...seedAgents];
-let tasks: Task[] = [];
+export const supabase = createClient(supabaseUrl, supabaseKey);
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 function generateId(prefix: string): string {
@@ -29,119 +18,158 @@ function generateId(prefix: string): string {
 }
 
 // ─── Agent operations ───────────────────────────────────────────────────────
-export function getAllAgents(): Agent[] {
-  return agents;
+export async function getAllAgents(): Promise<Agent[]> {
+  const { data, error } = await supabase.from('agents').select('*').order('name');
+  if (error) { console.error('getAllAgents error:', error); return []; }
+  return (data || []) as Agent[];
 }
 
-export function getAgentById(id: string): Agent | null {
-  return agents.find(a => a.id === id) || null;
+export async function getAgentById(id: string): Promise<Agent | null> {
+  const { data, error } = await supabase.from('agents').select('*').eq('id', id).single();
+  if (error) return null;
+  return data as Agent;
 }
 
-export function updateAgent(id: string, updates: Partial<Agent>): Agent | null {
-  const index = agents.findIndex(a => a.id === id);
-  if (index === -1) return null;
-  agents[index] = { ...agents[index], ...updates };
-  return agents[index];
+export async function updateAgent(id: string, updates: Partial<Agent>): Promise<Agent | null> {
+  const { data, error } = await supabase.from('agents').update(updates).eq('id', id).select().single();
+  if (error) { console.error('updateAgent error:', error); return null; }
+  return data as Agent;
 }
 
-export function addAgent(agent: Agent): Agent {
-  agents.push(agent);
-  return agent;
+export async function addAgent(agent: Omit<Agent, 'stats'> & { stats?: Agent['stats'] }): Promise<Agent> {
+  const newAgent: Agent = {
+    ...agent,
+    stats: agent.stats || { totalCompleted: 0, averageCompletionTime: 0, inProgress: 0, failureRate: 0 },
+  };
+  const { data, error } = await supabase.from('agents').insert(newAgent).select().single();
+  if (error) throw new Error(error.message);
+  return data as Agent;
 }
 
 // ─── Task operations ────────────────────────────────────────────────────────
-export function getAllTasks(): Task[] {
-  return tasks;
+export async function getAllTasks(): Promise<Task[]> {
+  const { data, error } = await supabase.from('tasks').select('*').order('created_at', { ascending: false });
+  if (error) { console.error('getAllTasks error:', error); return []; }
+  return (data || []).map(mapTask);
 }
 
-export function getTaskById(id: string): Task | null {
-  return tasks.find(t => t.id === id) || null;
+export async function getTaskById(id: string): Promise<Task | null> {
+  const { data, error } = await supabase.from('tasks').select('*').eq('id', id).single();
+  if (error) return null;
+  return mapTask(data);
 }
 
-export function getTasksByAgentId(agentId: string): Task[] {
-  return tasks.filter(t => t.assignedAgentId === agentId);
+export async function getTasksByAgentId(agentId: string): Promise<Task[]> {
+  const { data, error } = await supabase.from('tasks').select('*').eq('assigned_agent_id', agentId);
+  if (error) return [];
+  return (data || []).map(mapTask);
 }
 
-export function createTask(input: CreateTaskInput): Task {
+export async function createTask(input: CreateTaskInput): Promise<Task> {
   const now = new Date().toISOString();
-  const newTask: Task = {
-    id: generateId('task'),
-    ...input,
+  const id = generateId('task');
+  const row = {
+    id,
+    title: input.title,
+    description: input.description,
+    assigned_agent_id: input.assignedAgentId,
+    priority: input.priority,
     status: 'queued',
-    createdAt: now,
-    updatedAt: now,
+    created_at: now,
+    updated_at: now,
     handoffs: [],
-    statusHistory: [{ id: generateId('sc'), status: 'queued', timestamp: now }],
+    status_history: [{ id: generateId('sc'), status: 'queued', timestamp: now }],
   };
-  tasks.unshift(newTask);
-  updateAgentStats(input.assignedAgentId);
-  return newTask;
+  const { data, error } = await supabase.from('tasks').insert(row).select().single();
+  if (error) throw new Error(error.message);
+  await updateAgentStats(input.assignedAgentId);
+  return mapTask(data);
 }
 
-export function updateTask(id: string, updates: UpdateTaskInput): Task | null {
-  const index = tasks.findIndex(t => t.id === id);
-  if (index === -1) return null;
+export async function updateTask(id: string, updates: UpdateTaskInput): Promise<Task | null> {
+  const existing = await getTaskById(id);
+  if (!existing) return null;
   const now = new Date().toISOString();
-  const updatedTask: Task = {
-    ...tasks[index],
-    ...updates,
-    updatedAt: now,
-    completedAt: updates.status === 'done' ? now : tasks[index].completedAt,
-    statusHistory: updates.status
-      ? [...tasks[index].statusHistory, { id: generateId('sc'), status: updates.status, timestamp: now }]
-      : tasks[index].statusHistory,
+  const row: Record<string, unknown> = {
+    updated_at: now,
   };
-  tasks[index] = updatedTask;
-  updateAgentStats(tasks[index].assignedAgentId);
-  return updatedTask;
+  if (updates.title) row.title = updates.title;
+  if (updates.description) row.description = updates.description;
+  if (updates.priority) row.priority = updates.priority;
+  if (updates.status) {
+    row.status = updates.status;
+    if (updates.status === 'done') row.completed_at = now;
+    row.status_history = [
+      ...existing.statusHistory,
+      { id: generateId('sc'), status: updates.status, timestamp: now },
+    ];
+  }
+  const { data, error } = await supabase.from('tasks').update(row).eq('id', id).select().single();
+  if (error) { console.error('updateTask error:', error); return null; }
+  await updateAgentStats(existing.assignedAgentId);
+  return mapTask(data);
 }
 
-export function handoffTask(taskId: string, fromAgentId: string, input: HandoffTaskInput): Task | null {
-  const index = tasks.findIndex(t => t.id === taskId);
-  if (index === -1) return null;
+export async function handoffTask(taskId: string, fromAgentId: string, input: HandoffTaskInput): Promise<Task | null> {
+  const existing = await getTaskById(taskId);
+  if (!existing) return null;
   const now = new Date().toISOString();
-  tasks[index] = {
-    ...tasks[index],
-    assignedAgentId: input.toAgentId,
-    updatedAt: now,
-    handoffs: [
-      ...tasks[index].handoffs,
-      { id: generateId('ho'), fromAgentId, toAgentId: input.toAgentId, timestamp: now, note: input.note },
-    ],
-  };
-  updateAgentStats(fromAgentId);
-  updateAgentStats(input.toAgentId);
-  return tasks[index];
+  const newHandoff = { id: generateId('ho'), fromAgentId, toAgentId: input.toAgentId, timestamp: now, note: input.note };
+  const { data, error } = await supabase.from('tasks').update({
+    assigned_agent_id: input.toAgentId,
+    updated_at: now,
+    handoffs: [...existing.handoffs, newHandoff],
+  }).eq('id', taskId).select().single();
+  if (error) return null;
+  await updateAgentStats(fromAgentId);
+  await updateAgentStats(input.toAgentId);
+  return mapTask(data);
 }
 
-export function deleteTask(id: string): boolean {
-  const index = tasks.findIndex(t => t.id === id);
-  if (index === -1) return false;
-  const agentId = tasks[index].assignedAgentId;
-  tasks.splice(index, 1);
-  updateAgentStats(agentId);
+export async function deleteTask(id: string): Promise<boolean> {
+  const task = await getTaskById(id);
+  if (!task) return false;
+  const { error } = await supabase.from('tasks').delete().eq('id', id);
+  if (error) return false;
+  await updateAgentStats(task.assignedAgentId);
   return true;
 }
 
 // ─── Stats helper ───────────────────────────────────────────────────────────
-function updateAgentStats(agentId: string): void {
-  const agent = getAgentById(agentId);
-  if (!agent) return;
-  const agentTasks = getTasksByAgentId(agentId);
-  const completedTasks = agentTasks.filter(t => t.status === 'done');
-  const failedTasks = agentTasks.filter(t => t.status === 'failed');
-  const inProgressTasks = agentTasks.filter(t => t.status === 'in_progress');
+async function updateAgentStats(agentId: string): Promise<void> {
+  const agentTasks = await getTasksByAgentId(agentId);
+  const completed = agentTasks.filter(t => t.status === 'done');
+  const failed = agentTasks.filter(t => t.status === 'failed');
+  const inProgress = agentTasks.filter(t => t.status === 'in_progress');
   let totalTime = 0;
-  completedTasks.forEach(t => {
+  completed.forEach(t => {
     if (t.completedAt) totalTime += new Date(t.completedAt).getTime() - new Date(t.createdAt).getTime();
   });
-  updateAgent(agentId, {
-    status: inProgressTasks.length > 0 ? 'busy' : agentTasks.some(t => t.status === 'blocked') ? 'blocked' : 'idle',
+  await updateAgent(agentId, {
+    status: inProgress.length > 0 ? 'busy' : agentTasks.some(t => t.status === 'blocked') ? 'blocked' : 'idle',
     stats: {
-      totalCompleted: completedTasks.length,
-      averageCompletionTime: completedTasks.length > 0 ? Math.round(totalTime / completedTasks.length / 60000) : 0,
-      inProgress: inProgressTasks.length,
-      failureRate: agentTasks.length > 0 ? Math.round((failedTasks.length / agentTasks.length) * 100) : 0,
+      totalCompleted: completed.length,
+      averageCompletionTime: completed.length > 0 ? Math.round(totalTime / completed.length / 60000) : 0,
+      inProgress: inProgress.length,
+      failureRate: agentTasks.length > 0 ? Math.round((failed.length / agentTasks.length) * 100) : 0,
     },
   });
+}
+
+// ─── Map DB row → Task type ──────────────────────────────────────────────────
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function mapTask(row: any): Task {
+  return {
+    id: row.id,
+    title: row.title,
+    description: row.description,
+    assignedAgentId: row.assigned_agent_id,
+    priority: row.priority,
+    status: row.status,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+    completedAt: row.completed_at,
+    handoffs: row.handoffs || [],
+    statusHistory: row.status_history || [],
+  };
 }
