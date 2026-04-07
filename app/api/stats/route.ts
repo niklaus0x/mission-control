@@ -4,8 +4,7 @@ import { DashboardStats } from '@/lib/types';
 
 export async function GET(request: NextRequest) {
   try {
-    const agents = getAllAgents();
-    const tasks = getAllTasks();
+    const [agents, tasks] = await Promise.all([getAllAgents(), getAllTasks()]);
     const stats: DashboardStats = {
       totalAgents: agents.length,
       activeAgents: agents.filter(a => a.status !== 'offline').length,

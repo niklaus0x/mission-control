@@ -4,7 +4,7 @@ import { UpdateTaskInput } from '@/lib/types';
 
 export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
   try {
-    const task = getTaskById(params.id);
+    const task = await getTaskById(params.id);
     if (!task) return NextResponse.json({ error: 'Task not found' }, { status: 404 });
     return NextResponse.json(task);
   } catch (error) {
@@ -15,7 +15,7 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
 export async function PATCH(request: NextRequest, { params }: { params: { id: string } }) {
   try {
     const updates: UpdateTaskInput = await request.json();
-    const task = updateTask(params.id, updates);
+    const task = await updateTask(params.id, updates);
     if (!task) return NextResponse.json({ error: 'Task not found' }, { status: 404 });
     return NextResponse.json(task);
   } catch (error) {
@@ -25,7 +25,7 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
 
 export async function DELETE(request: NextRequest, { params }: { params: { id: string } }) {
   try {
-    const success = deleteTask(params.id);
+    const success = await deleteTask(params.id);
     if (!success) return NextResponse.json({ error: 'Task not found' }, { status: 404 });
     return NextResponse.json({ success: true });
   } catch (error) {
