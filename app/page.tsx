@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useStore } from '@/lib/store';
 import AgentCard from '@/components/AgentCard';
 import StatsCard from '@/components/StatsCard';
@@ -15,7 +15,7 @@ export default function Home() {
   const [isAddAgentModalOpen, setIsAddAgentModalOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     try {
       const [agentsRes, statsRes, tasksRes] = await Promise.all([fetch('/api/agents'), fetch('/api/stats'), fetch('/api/tasks')]);
       const agentsData = await agentsRes.json();
@@ -27,9 +27,13 @@ export default function Home() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [setAgents, setStats, setTasks]);
 
-  useEffect(() => { fetchData(); const interval = setInterval(fetchData, 3000); return () => clearInterval(interval); }, []);
+  useEffect(() => {
+    fetchData();
+    const interval = setInterval(fetchData, 3000);
+    return () => clearInterval(interval);
+  }, [fetchData]);
 
   const handleCreateTask = async (input: CreateTaskInput) => {
     try {
@@ -52,7 +56,6 @@ export default function Home() {
         throw new Error(error.error || 'Failed to add agent');
       }
       
-      // Immediately update the UI with the new agent
       const result = await response.json();
       setAgents([...agents, result.agent]);
     } catch (error: any) {
